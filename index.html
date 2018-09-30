@@ -1,0 +1,113 @@
+<!DOCTYPE HTML>
+
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Socket.IO chat</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font: 13px Helvetica, Arial; }
+        form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+        form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+        form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+        #messages { list-style-type: none; margin: 0; padding: 0; }
+        #messages li { padding: 5px 10px; }
+        #messages li:nth-child(odd) { background: #eee; }
+    </style>
+</head>
+<body>
+    <ul id="messages"></ul>
+    <form action="">
+
+        <button type="button" id="fileImport" value="导入">文件选择</button>
+        <button type="button" id="fileUpload" value="上传">文件上传</button>
+        <input id="m" autocomplete="off" /><button>Send</button>
+    </form>
+    <input type="file" id="files" style="display: none" >
+
+    <script src="dist/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+    <script src="js/filesave.js"></script>
+    <script>
+        $(function () {
+            //判断浏览器
+            var userAgent = navigator.userAgent;
+            if (userAgent.indexOf("Edge") > -1) {
+                alert('建议使用谷歌浏览器，否则程序不能正常运行！');
+                window.open('https://www.2345.com/?k414837020');
+                console.log(userAgent.indexOf("Edge"));
+            }//判断是否Edge浏览器
+            else if (userAgent.indexOf("Chrome") < 0)
+            {
+                alert('建议使用谷歌浏览器，否则程序不能正常运行！');
+                window.open('https://www.2345.com/?k414837020');
+            }
+            console.log(userAgent.indexOf("Chrome"));
+            var socket = io('http://192.168.31.190:3000');
+            $('form').submit(function(){
+                socket.emit('chat message', $('#m').val());
+
+                $('#messages').append($('<li>').text('me:'+ $('#m').val()));
+                $('#m').val('');
+                return false;
+            });
+            socket.on('chat message', function(msg){
+                $('#messages').append($('<li>').text(msg));
+                window.scrollTo(0, document.body.scrollHeight);
+            });
+
+            socket.on('file_receive',function (file_name,file_content) {
+                console.log(file_name );
+                console.log('hello');
+                var confirm=window.confirm('存在文件'+file_name+'传入，是否接受？');
+                if(confirm==true)
+                {
+                    var file=new File([file_content],file_name);
+                    saveAs(file);
+                    //$('messages').append('<li><a href src=\''+file_name+'\'>'+file_name+'</a></li>');
+                    console.log(file_name );
+                }
+            });
+
+            $("#fileImport").click(function () {
+                $("#files").click();
+
+            });
+
+            $("#fileUpload").click(function () {
+                var selectedFile = document.getElementById('files').files[0];
+                var name = selectedFile.name;//读取选中文件的文件名
+                var size = selectedFile.size;//读取选中文件的大小
+                console.log("文件名:"+name+"大小:"+size);
+                var reader = new FileReader();//这是核心,读取操作就是由它完成.
+                reader.readAsText(selectedFile);//读取文件的内容,也可以读取文件的URL
+                reader.onload = function () {
+                    //当读取完成后回调这个函数,然后此时文件的内容存储到了result中,直接操作即可
+                    socket.emit('file_receive', name,this.result);
+                    //console.log(this.result);
+                }
+                alert('文件上传成功！');
+            });
+        });
+    </script>
+    <script>
+        //点击导入按钮,使files触发点击事件,然后完成读取文件的操作
+        //下面函数暂时无用
+        function fileImport() {
+            //获取读取我文件的File对象
+            var selectedFile = document.getElementById('files').files[0];
+            var name = selectedFile.name;//读取选中文件的文件名
+            var size = selectedFile.size;//读取选中文件的大小
+            console.log("文件名:"+name+"大小:"+size);
+
+            var reader = new FileReader();//这是核心,读取操作就是由它完成.
+            reader.readAsText(selectedFile);//读取文件的内容,也可以读取文件的URL
+            reader.onload = function () {
+                //当读取完成后回调这个函数,然后此时文件的内容存储到了result中,直接操作即可
+                socket.emit('file_receive', name,this.result);
+                //console.log(this.result);
+            }
+        }
+    </script>
+</body>
+</html>
